@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Cobranças Uvel</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:#0d0f14; --surface:#14171f; --surface2:#1c2030; --border:#262c3d;
+  --accent:#4f8ef7; --green:#3dd68c; --red:#f75a5a; --yellow:#f7c94f;
+  --text:#e8ecf5; --muted:#7a85a0; --card-shadow:0 4px 24px rgba(0,0,0,.4);
+  --city-color:#4f8ef7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;}
+
+/* SHELL */
+.shell{display:grid;grid-template-columns:245px 1fr;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+
+/* LOGO */
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);}
+.brand{font-family:'DM Serif Display',serif;font-size:16px;color:var(--text);line-height:1.3;}
+.brand span{color:var(--city-color);}
+
+/* CITY SELECTOR */
+.city-selector-wrap{padding:14px 16px;border-bottom:1px solid var(--border);}
+.city-selector-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+.city-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:5px;text-align:left;}
+.city-btn:hover{background:var(--surface2);color:var(--text);}
+.city-btn.active{background:rgba(79,142,247,.1);border-color:var(--city-color);color:var(--text);}
+.city-btn .city-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.city-btn .city-info{flex:1;}
+.city-btn .city-name{font-weight:600;font-size:13px;line-height:1.2;}
+.city-btn .city-state{font-size:10px;color:var(--muted);margin-top:1px;}
+.city-btn.active .city-state{color:var(--city-color);opacity:.8;}
+.city-btn .city-badge{font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 6px;color:var(--muted);}
+.city-btn.active .city-badge{background:rgba(79,142,247,.15);border-color:rgba(79,142,247,.3);color:var(--accent);}
+
+/* NAV */
+.nav{padding:12px 0;flex:1;}
+.nav-section{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:8px 20px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;}
+.nav-item:hover{color:var(--text);background:var(--surface2);}
+.nav-item.active{color:var(--city-color);border-left-color:var(--city-color);background:rgba(79,142,247,.07);}
+
+/* SIDEBAR FOOTER */
+.sidebar-footer{padding:14px 16px;border-top:1px solid var(--border);}
+.today-badge{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.15);border-radius:8px;padding:8px 12px;text-align:center;}
+.today-badge .date-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.today-badge .date-val{font-size:14px;font-weight:700;color:var(--accent);margin-top:2px;}
+
+/* MAIN */
+.main{padding:28px 32px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* CITY HEADER BANNER */
+.city-banner{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:22px;border-left:4px solid var(--city-color);}
+.city-banner .cb-dot{width:14px;height:14px;border-radius:50%;background:var(--city-color);flex-shrink:0;}
+.city-banner .cb-name{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);}
+.city-banner .cb-state{font-size:12px;color:var(--muted);margin-top:2px;}
+.city-banner .cb-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.city-badge-count{background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--accent);}
+
+/* PAGE HEADER */
+.page-header{margin-bottom:20px;}
+.page-header h1{font-family:'DM Serif Display',serif;font-size:26px;font-weight:400;}
+.page-header p{color:var(--muted);margin-top:3px;font-size:13px;}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:22px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--card-shadow);}
+.card-label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:7px;}
+.card-value{font-size:23px;font-weight:700;color:var(--text);line-height:1;}
+.card-value.green{color:var(--green);}
+.card-value.red{color:var(--red);}
+.card-value.yellow{color:var(--yellow);}
+.card-value.blue{color:var(--accent);}
+.card-sub{font-size:12px;color:var(--muted);margin-top:5px;}
+
+/* PANEL */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--card-shadow);margin-bottom:18px;}
+.panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.panel-title{font-size:15px;font-weight:600;color:var(--text);}
+.panel-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#3a7adf;}
+.btn-success{background:var(--green);color:#0d1a12;}
+.btn-success:hover{background:#2ec07a;}
+.btn-danger{background:transparent;border:1px solid var(--red);color:var(--red);}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);}
+.btn-warning{background:rgba(247,201,79,.12);border:1px solid rgba(247,201,79,.25);color:var(--yellow);}
+.btn-warning:hover{background:rgba(247,201,79,.25);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{background:var(--surface2);padding:9px 13px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid rgba(38,44,61,.5);transition:background .1s;}
+tbody tr:hover{background:var(--surface2);}
+tbody td{padding:9px 13px;font-size:13px;}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.badge-red   {background:rgba(247,90,90,.15);color:var(--red);border:1px solid rgba(247,90,90,.3);}
+.badge-yellow{background:rgba(247,201,79,.15);color:var(--yellow);border:1px solid rgba(247,201,79,.3);}
+.badge-green {background:rgba(61,214,140,.15);color:var(--green);border:1px solid rgba(61,214,140,.3);}
+.badge-blue  {background:rgba(79,142,247,.15);color:var(--accent);border:1px solid rgba(79,142,247,.3);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:11px;margin-bottom:13px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.form-control{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;font-family:inherit;transition:border-color .15s;}
+.form-control:focus{outline:none;border-color:var(--accent);}
+.form-control::placeholder{color:var(--muted);}
+select.form-control option{background:var(--surface2);}
+
+/* SUMMARY BAR */
+.summary-bar{background:linear-gradient(135deg,rgba(79,142,247,.07),rgba(61,214,140,.07));border:1px solid rgba(79,142,247,.12);border-radius:12px;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.sum-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.sum-value{font-size:21px;font-weight:700;color:var(--green);}
+
+.days-critical{color:var(--red);font-weight:700;}
+.days-warning{color:var(--yellow);font-weight:600;}
+.days-ok{color:var(--green);}
+
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--city-color);background:rgba(79,142,247,.04);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:44px;margin-bottom:10px;}
+.upload-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.upload-sub{font-size:13px;color:var(--muted);}
+.upload-hint{font-size:11px;color:var(--muted);margin-top:9px;background:var(--surface2);border-radius:8px;padding:7px 13px;display:inline-block;}
+.import-progress{display:none;margin-top:14px;}
+.progress-bar-wrap{background:var(--surface2);border-radius:8px;height:7px;overflow:hidden;margin-top:7px;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:8px;transition:width .4s;}
+.import-result{display:none;margin-top:14px;border-radius:10px;padding:13px 16px;}
+.import-result.success{background:rgba(61,214,140,.08);border:1px solid rgba(61,214,140,.2);}
+.import-result.error{background:rgba(247,90,90,.08);border:1px solid rgba(247,90,90,.2);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;width:520px;max-width:95vw;max-height:92vh;overflow-y:auto;}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.modal-title{font-size:17px;font-weight:600;}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;}
+
+/* CITY SWITCH MODAL */
+.city-switch-modal .city-opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:2px solid var(--border);margin-bottom:10px;cursor:pointer;transition:all .15s;}
+.city-switch-modal .city-opt:hover{border-color:var(--accent);background:rgba(79,142,247,.05);}
+.city-switch-modal .city-opt.selected{border-color:var(--city-color);background:rgba(79,142,247,.08);}
+.city-opt-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;}
+.city-opt-name{font-weight:600;font-size:15px;}
+.city-opt-state{font-size:12px;color:var(--muted);margin-top:2px;}
+.city-opt-stats{margin-left:auto;text-align:right;font-size:12px;color:var(--muted);}
+.city-opt-stats strong{color:var(--accent);}
+
+/* SCROLL TABLE */
+.scroll-table{max-height:380px;overflow-y:auto;}
+.scroll-table thead th{position:sticky;top:0;z-index:1;}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 17px;font-size:13px;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.5);display:none;animation:slideUp .3s ease;min-width:210px;}
+@keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+
+.empty-state{text-align:center;padding:36px;color:var(--muted);font-size:13px;}
+.empty-icon{font-size:34px;margin-bottom:8px;}
+
+@media print{
+  .sidebar,.btn,.form-grid,.no-print,.upload-zone,.city-banner .cb-right{display:none!important;}
+  .shell{grid-template-columns:1fr;}
+  body{background:#fff;color:#000;}
+  .card,.panel{border:1px solid #ccc;box-shadow:none;background:#fff;}
+  .card-value,.panel-title,tbody td,thead th{color:#000!important;}
+  .badge-red{color:#c00!important;}.badge-yellow{color:#996!important;}.badge-green{color:#060!important;}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">Controle de<br>Cobranças <span>Uvel</span></div>
+  </div>
+
+  <!-- CITY SELECTOR -->
+  <div class="city-selector-wrap">
+    <div class="city-selector-label">🏙️ Cidade ativa</div>
+    <div id="active-city-display" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+      <div id="active-city-dot" style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--city-color)"></div>
+      <div style="flex:1">
+        <div id="active-city-name" style="font-weight:600;font-size:13px;color:var(--text)">—</div>
+        <div id="active-city-state" style="font-size:10px;color:var(--muted)">—</div>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="openCityModal()">⇄ Trocar cidade</button>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">Menu</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span>🏠</span> Dashboard</div>
+    <div class="nav-item" onclick="showPage('recebidos')"><span>💰</span> Recebidos</div>
+    <div class="nav-item" onclick="showPage('inadimplentes')"><span>⚠️</span> Inadimplentes</div>
+    <div class="nav-item" onclick="showPage('clientes')"><span>👥</span> Clientes</div>
+    <div class="nav-item" onclick="showPage('importar')"><span>📂</span> Importar Planilha</div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="today-badge">
+      <div class="date-label">Hoje</div>
+      <div class="date-val" id="today-date">—</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main class="main">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="page active" id="page-dashboard">
+    <div id="city-banner-dash"></div>
+    <div class="page-header"><h1>Dashboard</h1><p>Visão consolidada da cidade ativa</p></div>
+    <div class="cards">
+      <div class="card"><div class="card-label">Total Registros</div><div class="card-value blue" id="dc-total">0</div><div class="card-sub" id="dc-total-sub">da planilha importada</div></div>
+      <div class="card"><div class="card-label">Faturas Vencidas</div><div class="card-value red" id="dc-vencidas">0</div><div class="card-sub" id="dc-vencidas-sub">em atraso</div></div>
+      <div class="card"><div class="card-label">A Vencer (30 dias)</div><div class="card-value yellow" id="dc-avencer">0</div><div class="card-sub">próximos vencimentos</div></div>
+      <div class="card"><div class="card-label">Total Recebido</div><div class="card-value green" id="dc-recebido">R$ 0,00</div><div class="card-sub" id="dc-recebido-sub">0 lançamentos</div></div>
+      <div class="card"><div class="card-label">Saldo Devedor</div><div class="card-value red" id="dc-saldo-dev">R$ 0,00</div><div class="card-sub" id="dc-saldo-dev-sub">inadimplentes</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header"><div><div class="panel-title">Top Inadimplentes</div><div class="panel-sub">Maiores atrasos</div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Faturas</th><th>Dias Máx</th></tr></thead><tbody id="top-clients-table"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div><div class="panel-title">Vencimentos Próximos</div><div class="panel-sub">Próximos 30 dias</div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Vencimento</th><th>Status</th></tr></thead><tbody id="venc-proximos-table"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RECEBIDOS ── -->
+  <div class="page" id="page-recebidos">
+    <div id="city-banner-rec"></div>
+    <div class="page-header"><h1>Recebidos</h1><p>Registre pagamentos recebidos</p></div>
+    <div class="panel no-print">
+      <div class="panel-title" style="margin-bottom:13px">➕ Novo Recebimento</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Cliente</label><input class="form-control" id="rec-cliente" placeholder="Nome do cliente" list="clientes-list"><datalist id="clientes-list"></datalist></div>
+        <div class="form-group"><label class="form-label">Nr. Fatura</label><input class="form-control" id="rec-fatura" placeholder="Ex: 142886"></div>
+        <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-control" id="rec-valor" type="number" placeholder="0,00" step="0.01" min="0"></div>
+        <div class="form-group"><label class="form-label">Data</label><input class="form-control" id="rec-data" type="date"></div>
+        <div class="form-group"><label class="form-label">Forma Cobrança</label>
+          <select class="form-control" id="rec-forma"><option value="">Selecione...</option><option>Bradesco Boleto Jaragua</option><option>Bradesco Boleto Umuarama</option><option>Carteira (Jaragua)</option><option>Seguradora (Jaragua)</option><option>PIX</option><option>Transferência</option><option>Outro</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Observação</label><input class="form-control" id="rec-obs" placeholder="Opcional"></div>
+      </div>
+      <button class="btn btn-success" onclick="addRecebido()">💾 Salvar Recebimento</button>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <div><div class="panel-title">Histórico de Recebimentos</div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+          <input class="form-control" style="width:190px" id="rec-search" placeholder="🔍 Buscar..." oninput="renderRecebidos()">
+          <select class="form-control" id="rec-mes-filtro" onchange="renderRecebidos()" style="width:140px"><option value="">Todos os meses</option></select>
+          <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨️</button>
+        </div>
+      </div>
+      <div class="summary-bar">
+        <div><div class="sum-label">Total Recebido (filtro)</div><div class="sum-value" id="rec-sum-valor">R$ 0,00</div></div>
+        <div style="text-align:right"><div class="sum-label">Lançamentos</div><div style="font-size:20px;font-weight:700;color:var(--accent)" id="rec-sum-count">0</div></div>
+      </div>
+      <div class="scroll-table"><table>
+        <thead><tr><th>Data</th><th>Cliente</th><th>Nr. Fatura</th><th>Valor</th><th>Forma</th><th>Obs</th><th class="no-print">Ação</th></tr></thead>
+        <tbody id="rec-table-body"></tbody>
+      </table></div>
+      <div id="rec-empty" class="empty-state" style="display:none"><div class="empty-icon">💳</div>Nenhum recebimento para esta cidade.</div>
+    </div>
+  </div>
+
+  <!-- ── INADIMPLENTES ── -->
+  <div class="page" id="page-inadimplentes">
+    <div id="city-banner-inad"></div>
+    <div class="page-header"><h1>Inadimplentes</h1><p>Faturas vencidas desta cidade</p></div>
+    <div class="cards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="card"><div class="card-label">Crítico (&gt;90 dias)</div><div class="card-value red" id="inad-critico">0</div><div class="card-sub">clientes</div></div>
+      <div class="card"><div class="card-label">Atenção (31–90 dias)</div><div class="card-value yellow" id="inad-atencao">0</div><div class="card-sub">clientes</div></div>
+      <div class="card"><div class="card-label">Recente (1–30 dias)</div><div class="card-value blue" id="inad-recente">0</div><div class="card-sub">clientes</div></div>
+    </div>
+    <div class="panel no-print">
+      <div class="panel-title" style="margin-bottom:13px">➕ Adicionar Devedor Manualmente</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Cliente</label><input class="form-control" id="dev-cliente" placeholder="Nome do cliente" list="clientes-list"></div>
+        <div class="form-group"><label class="form-label">Nr. Fatura</label><input class="form-control" id="dev-fatura" placeholder="Ex: 142886"></div>
+        <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-control" id="dev-valor" type="number" placeholder="0,00" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Data Vencimento</label><input class="form-control" id="dev-venc" type="date"></div>
+        <div class="form-group"><label class="form-label">Forma Cobrança</label>
+          <select class="form-control" id="dev-forma"><option value="">Selecione...</option><option>Bradesco Boleto Jaragua</option><option>Bradesco Boleto Umuarama</option><option>Carteira (Jaragua)</option><option>Seguradora (Jaragua)</option><option>Outro</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Observação</label><input class="form-control" id="dev-obs" placeholder="Opcional"></div>
+      </div>
+      <button class="btn btn-warning" onclick="addDevedor()">⚠️ Registrar Devedor</button>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <div><div class="panel-title">Lista de Inadimplentes</div><div class="panel-sub">Ordenado por dias de atraso</div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <input class="form-control" style="width:190px" id="dev-search" placeholder="🔍 Buscar..." oninput="renderDevedores()">
+          <select class="form-control" id="dev-filtro" onchange="renderDevedores()" style="width:150px">
+            <option value="">Todos</option><option value="critico">Crítico (&gt;90d)</option><option value="atencao">Atenção (31–90d)</option><option value="recente">Recente (1–30d)</option>
+          </select>
+          <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨️</button>
+        </div>
+      </div>
+      <div class="scroll-table"><table>
+        <thead><tr><th>Cliente</th><th>Nr. Fatura</th><th>Vencimento</th><th>Dias Atraso</th><th>Valor</th><th>Forma</th><th>Origem</th><th>Status</th><th class="no-print">Ação</th></tr></thead>
+        <tbody id="dev-table-body"></tbody>
+      </table></div>
+      <div id="dev-empty" class="empty-state" style="display:none"><div class="empty-icon">✅</div>Nenhum devedor para esta cidade.</div>
+    </div>
+  </div>
+
+  <!-- ── CLIENTES ── -->
+  <div class="page" id="page-clientes">
+    <div id="city-banner-cli"></div>
+    <div class="page-header"><h1>Clientes</h1><p id="clientes-header-sub">Base importada desta cidade</p></div>
+    <div class="panel">
+      <div class="panel-header">
+        <div><div class="panel-title">Clientes Cadastrados</div><div class="panel-sub" id="clientes-count-sub">— registros</div></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <input class="form-control" style="width:230px" id="cli-search" placeholder="🔍 Buscar cliente ou fatura..." oninput="renderClientes()">
+          <select class="form-control" id="cli-status-filtro" onchange="renderClientes()" style="width:135px"><option value="">Todos</option><option value="vencida">Vencidas</option><option value="avencer">A Vencer</option></select>
+          <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨️</button>
+        </div>
+      </div>
+      <div class="scroll-table"><table>
+        <thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Nr. Fatura</th><th>Emissão</th><th>Vencimento</th><th>Saldo</th><th>Par.</th><th>Forma</th><th>Status</th></tr></thead>
+        <tbody id="cli-table-body"></tbody>
+      </table></div>
+      <div id="cli-empty" class="empty-state" style="display:none">
+        <div class="empty-icon">📂</div>Nenhum cliente importado para esta cidade.<br>
+        <button class="btn btn-primary" style="margin-top:11px" onclick="showPage('importar')">📂 Importar Planilha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── IMPORTAR ── -->
+  <div class="page" id="page-importar">
+    <div id="city-banner-imp"></div>
+    <div class="page-header"><h1>Importar Planilha</h1><p>Faça upload do Excel para a cidade ativa — cada cidade tem sua base separada</p></div>
+
+    <div class="panel">
+      <div class="panel-title" style="margin-bottom:14px">📂 Upload de Arquivo</div>
+      <div class="upload-zone" id="upload-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <input type="file" id="file-input" accept=".xls,.xlsx,.csv" onchange="handleFileSelect(event)">
+        <div class="upload-icon">📊</div>
+        <div class="upload-title">Arraste a planilha ou clique para selecionar</div>
+        <div class="upload-sub">Suporta <strong>.XLS</strong>, <strong>.XLSX</strong> e <strong>.CSV</strong></div>
+        <div class="upload-hint" id="upload-city-hint">💡 Os dados serão salvos exclusivamente para a cidade ativa</div>
+      </div>
+      <div class="import-progress" id="import-progress"><div style="font-size:13px;color:var(--muted)">Processando...</div><div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-bar" style="width:0%"></div></div></div>
+      <div class="import-result" id="import-result"></div>
+    </div>
+
+    <!-- MAPEAMENTO -->
+    <div class="panel" id="col-mapping-panel" style="display:none">
+      <div class="panel-header"><div><div class="panel-title">🗂️ Mapeamento de Colunas</div><div class="panel-sub">Confirme quais colunas correspondem a cada campo</div></div></div>
+      <div class="form-grid" id="col-mapping-form"></div>
+      <div style="display:flex;gap:9px;margin-top:4px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="confirmImport()">✅ Confirmar e Importar</button>
+        <button class="btn btn-ghost" onclick="cancelImport()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- PRÉVIA -->
+    <div class="panel" id="preview-panel" style="display:none">
+      <div class="panel-header"><div><div class="panel-title">👁️ Prévia dos Dados</div><div class="panel-sub" id="preview-sub"></div></div></div>
+      <div class="scroll-table" style="max-height:240px"><table><thead id="preview-thead"></thead><tbody id="preview-tbody"></tbody></table></div>
+    </div>
+
+    <!-- HISTÓRICO POR CIDADE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div><div class="panel-title">📋 Histórico de Importações — <span id="hist-city-label">—</span></div></div>
+        <button class="btn btn-danger btn-sm no-print" onclick="clearImportHistory()" id="clear-hist-btn" style="display:none">🗑 Limpar</button>
+      </div>
+      <div id="import-history-list"><div class="empty-state"><div class="empty-icon">📂</div>Nenhuma importação ainda para esta cidade.</div></div>
+    </div>
+
+    <!-- COLUNAS RECONHECIDAS -->
+    <div class="panel">
+      <div class="panel-title" style="margin-bottom:11px">📘 Colunas Reconhecidas Automaticamente</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 13px;font-size:12px"><div style="color:var(--accent);font-weight:600;margin-bottom:3px">Cliente / Nome</div><div style="color:var(--muted)">Cliente, Nome, Razão Social</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 13px;font-size:12px"><div style="color:var(--accent);font-weight:600;margin-bottom:3px">CPF / CNPJ</div><div style="color:var(--muted)">CPF, CNPJ, CPF/CNPJ, Documento</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 13px;font-size:12px"><div style="color:var(--accent);font-weight:600;margin-bottom:3px">Fatura / NF</div><div style="color:var(--muted)">Nr. Fatura, Fatura, NF, Número O.S</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 13px;font-size:12px"><div style="color:var(--accent);font-weight:600;margin-bottom:3px">Emissão / Vencimento</div><div style="color:var(--muted)">Emissão, Vencimento, Venc, Due Date</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 13px;font-size:12px"><div style="color:var(--accent);font-weight:600;margin-bottom:3px">Valor / Saldo</div><div style="color:var(--muted)">Saldo, Valor, Valor Dpl, Valor Total</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 13px;font-size:12px"><div style="color:var(--accent);font-weight:600;margin-bottom:3px">Forma Cobrança</div><div style="color:var(--muted)">Forma Cobrança, Forma, Pagamento</div></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- MODAL TROCAR CIDADE -->
+<div class="modal-overlay" id="city-modal">
+  <div class="modal city-switch-modal">
+    <div class="modal-header">
+      <div class="modal-title">🏙️ Selecionar Cidade</div>
+      <button class="modal-close" onclick="closeCityModal()">✕</button>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Cada cidade possui seus próprios dados — planilha, recebidos e inadimplentes separados.</p>
+    <div id="city-modal-opts"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeCityModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">✏️ Editar Lançamento</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Cliente</label><input class="form-control" id="edit-cliente"></div>
+      <div class="form-group"><label class="form-label">Nr. Fatura</label><input class="form-control" id="edit-fatura"></div>
+      <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-control" id="edit-valor" type="number" step="0.01"></div>
+      <div class="form-group"><label class="form-label">Data</label><input class="form-control" id="edit-data" type="date"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Obs</label><input class="form-control" id="edit-obs"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEdit()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SUPABASE CONFIG
+// ═══════════════════════════════════════════════════════
+const SUPA_URL = 'https://ecjussbwbhrgaxzlwsxp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjanVzc2J3YmhyZ2F4emx3c3hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MDc4NDgsImV4cCI6MjA4ODk4Mzg0OH0.U_crXAhSXSlhrpi3jADK2ZtLJaSyEXfFhFNm6aIcoSI';
+
+async function sbFetch(table, method='GET', body=null, query=''){
+  const url = `${SUPA_URL}/rest/v1/${table}${query}`;
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': method==='POST' ? 'return=representation' : ''
+  };
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
+  if(!res.ok){ const err=await res.text(); throw new Error(err); }
+  if(method==='DELETE' || res.status===204) return [];
+  return res.json();
+}
+
+async function dbGet(table, cityId){
+  return sbFetch(table,'GET',null,`?city_id=eq.${cityId}&order=created_at.desc`);
+}
+async function dbInsert(table, row){ return sbFetch(table,'POST',row); }
+async function dbDelete(table, id){ return sbFetch(table,'DELETE',null,`?id=eq.${id}`); }
+async function dbUpdate(table, id, row){ return sbFetch(table,'PATCH',row,`?id=eq.${id}`); }
+async function dbDeleteAll(table, cityId){ return sbFetch(table,'DELETE',null,`?city_id=eq.${cityId}`); }
+
+// In-memory cache
+let cache = { clientes:[], recebidos:[], devedores:[] };
+
+async function loadCityData(){
+  showLoading(true);
+  try {
+    const cid = activeCity;
+    const [c,r,d] = await Promise.all([
+      dbGet('clientes', cid),
+      dbGet('recebidos', cid),
+      dbGet('devedores', cid)
+    ]);
+    cache.clientes  = c||[];
+    cache.recebidos = r||[];
+    cache.devedores = d||[];
+  } catch(e){
+    showToast('⚠️ Erro ao carregar dados: '+e.message,'var(--red)');
+  }
+  showLoading(false);
+}
+
+function showLoading(v){
+  let el = document.getElementById('global-loading');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'global-loading';
+    el.style.cssText='position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--green));z-index:9999;transition:opacity .3s;';
+    document.body.appendChild(el);
+  }
+  el.style.opacity = v ? '1' : '0';
+}
+
+// ═══════════════════════════════════════════════════════
+// CIDADES
+// ═══════════════════════════════════════════════════════
+const CITIES = [
+  { id:'umuarama',  name:'Umuarama',        state:'PR',  color:'#4f8ef7', flag:'🔵' },
+  { id:'jaragua',   name:'Jaraguá do Sul',  state:'SC',  color:'#3dd68c', flag:'🟢' },
+  { id:'saobento',  name:'São Bento do Sul', state:'SC', color:'#f7c94f', flag:'🟡' },
+];
+
+let activeCity = localStorage.getItem('fd_active_city') || 'umuarama';
+
+function city()    { return CITIES.find(c=>c.id===activeCity); }
+function cityKey(suffix) { return `fd_${activeCity}_${suffix}`; }
+function load(k)   { try{return JSON.parse(localStorage.getItem(k)||'[]');}catch{return[];} }
+function save(k,v) { localStorage.setItem(k,JSON.stringify(v)); }
+
+// Cache getters — dados vêm do Supabase (carregados em loadCityData)
+function getClientes()  { return cache.clientes;  }
+function getRecebidos() { return cache.recebidos; }
+function getDevedores() { return cache.devedores; }
+function getImpHist()   { return load(cityKey('imp_hist')); }
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function today()      { const t=new Date(); t.setHours(0,0,0,0); return t; }
+function diffDays(d)  { return Math.floor((today()-d)/86400000); }
+function fmtBRL(v)    { return 'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(iso) { if(!iso)return'—'; const[y,m,d]=iso.split('-'); return`${d}/${m}/${y}`; }
+function parseDateISO(iso){ if(!iso)return null; const[y,m,d]=iso.split('-'); return new Date(+y,+m-1,+d); }
+function isoFromBR(s){
+  if(!s||s==='—')return null;
+  s=s.trim();
+  const m1=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m1)return`${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  const n=parseFloat(s);
+  if(!isNaN(n)&&n>1000){const d=new Date(Date.UTC(1900,0,1)+(n-2)*86400000);return d.toISOString().split('T')[0];}
+  return null;
+}
+function showToast(msg,col='var(--green)'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.borderColor=col;t.style.display='block';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3000);
+}
+function closeModal(){ document.getElementById('edit-modal').classList.remove('show'); }
+let editType='',editIdx=-1;
+
+// ═══════════════════════════════════════════════════════
+// CITY UI
+// ═══════════════════════════════════════════════════════
+function applyThemeColor(color){
+  document.documentElement.style.setProperty('--city-color',color);
+}
+
+function buildCityBtns(){
+  const c = city();
+  document.getElementById('active-city-dot').style.background = c.color;
+  document.getElementById('active-city-name').textContent = c.name;
+  document.getElementById('active-city-state').textContent = c.state;
+}
+
+function buildCityBanner(containerId){
+  const c=city();
+  const cli=getClientes().length;
+  const rec=getRecebidos().length;
+  document.getElementById(containerId).innerHTML=`
+    <div class="city-banner" style="border-left-color:${c.color}">
+      <div class="city-dot" style="background:${c.color};width:14px;height:14px;border-radius:50%"></div>
+      <div><div class="cb-name">${c.name}</div><div class="cb-state">${c.state}</div></div>
+      <div class="cb-right">
+        ${cli>0?`<span class="city-badge-count">📋 ${cli} clientes</span>`:''}
+        ${rec>0?`<span class="city-badge-count" style="background:rgba(61,214,140,.1);border-color:rgba(61,214,140,.2);color:var(--green)">💰 ${rec} recebimentos</span>`:''}
+        <button class="btn btn-ghost btn-sm no-print" onclick="openCityModal()">⇄ Trocar</button>
+      </div>
+    </div>`;
+}
+
+async function switchCity(id){
+  activeCity=id;
+  localStorage.setItem('fd_active_city',id);
+  applyThemeColor(city().color);
+  buildCityBtns();
+  await loadCityData();
+  buildClientesList();
+  const cur=document.querySelector('.page.active');
+  const pageId=cur?cur.id.replace('page-',''):'dashboard';
+  refreshPage(pageId);
+  closeCityModal();
+  showToast(`🏙️ Cidade alterada para ${city().name}!`,city().color);
+  const iso=today().toISOString().split('T')[0];
+  document.getElementById('rec-data').value=iso;
+  document.getElementById('dev-venc').value=iso;
+}
+
+function refreshPage(id){
+  if(id==='dashboard')    renderDashboard();
+  if(id==='recebidos')    renderRecebidos();
+  if(id==='inadimplentes')renderDevedores();
+  if(id==='clientes')     renderClientes();
+  if(id==='importar')     { renderImportHistory(); updateUploadHint(); }
+}
+
+// MODAL CIDADE
+async function openCityModal(){
+  document.getElementById('city-modal').classList.add('show');
+  const el=document.getElementById('city-modal-opts');
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">Carregando...</div>';
+  // Load counts for all cities
+  const counts = await Promise.all(CITIES.map(async c=>{
+    try{
+      const [cli,rec,dev]=await Promise.all([
+        sbFetch('clientes','GET',null,`?city_id=eq.${c.id}&select=id`),
+        sbFetch('recebidos','GET',null,`?city_id=eq.${c.id}&select=id`),
+        sbFetch('devedores','GET',null,`?city_id=eq.${c.id}&select=id`),
+      ]);
+      return{cli:cli.length,rec:rec.length,dev:dev.length};
+    }catch{return{cli:0,rec:0,dev:0};}
+  }));
+  el.innerHTML=CITIES.map((c,i)=>`
+    <div class="city-opt ${c.id===activeCity?'selected':''}" onclick="switchCity('${c.id}')">
+      <div class="city-opt-dot" style="background:${c.color}"></div>
+      <div><div class="city-opt-name">${c.flag} ${c.name}</div><div class="city-opt-state">${c.state}</div></div>
+      <div class="city-opt-stats">
+        <strong>${counts[i].cli}</strong> clientes<br>
+        <strong>${counts[i].rec}</strong> recebidos · <strong>${counts[i].dev}</strong> devedores
+      </div>
+    </div>`).join('');
+}
+function closeCityModal(){ document.getElementById('city-modal').classList.remove('show'); }
+
+// ═══════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const map={dashboard:'Dashboard',recebidos:'Recebidos',inadimplentes:'Inadimplentes',clientes:'Clientes',importar:'Importar'};
+  document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim().includes(map[id]))n.classList.add('active');});
+  refreshPage(id);
+}
+
+// ═══════════════════════════════════════════════════════
+// DATALIST
+// ═══════════════════════════════════════════════════════
+function buildClientesList(){
+  const names=[...new Set(getClientes().map(c=>c.cliente).filter(Boolean))].sort();
+  document.getElementById('clientes-list').innerHTML=names.map(n=>`<option value="${n}">`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// RECEBIDOS
+// ═══════════════════════════════════════════════════════
+async function addRecebido(){
+  const c=document.getElementById('rec-cliente').value.trim();
+  const f=document.getElementById('rec-fatura').value.trim();
+  const v=parseFloat(document.getElementById('rec-valor').value);
+  const d=document.getElementById('rec-data').value;
+  const forma=document.getElementById('rec-forma').value;
+  const obs=document.getElementById('rec-obs').value.trim();
+  if(!c||isNaN(v)||!d){showToast('Preencha cliente, valor e data!','var(--red)');return;}
+  try{
+    const row=await dbInsert('recebidos',{city_id:activeCity,cliente:c,fatura:f,valor:v,data:d,forma,obs});
+    cache.recebidos.unshift(row[0]);
+    ['rec-cliente','rec-fatura','rec-valor','rec-obs'].forEach(id=>document.getElementById(id).value='');
+    renderRecebidos(); renderDashboard();
+    showToast('✅ Recebimento salvo!');
+  }catch(e){showToast('❌ Erro ao salvar: '+e.message,'var(--red)');}
+}
+async function deleteRecebido(id){
+  if(!confirm('Remover?'))return;
+  try{
+    await dbDelete('recebidos',id);
+    cache.recebidos=cache.recebidos.filter(r=>r.id!==id);
+    renderRecebidos(); renderDashboard(); showToast('Removido.','var(--muted)');
+  }catch(e){showToast('❌ Erro: '+e.message,'var(--red)');}
+}
+function editRecebido(id){
+  const r=cache.recebidos.find(x=>x.id===id);
+  if(!r)return;
+  document.getElementById('edit-cliente').value=r.cliente;
+  document.getElementById('edit-fatura').value=r.fatura||'';
+  document.getElementById('edit-valor').value=r.valor;
+  document.getElementById('edit-data').value=r.data;
+  document.getElementById('edit-obs').value=r.obs||'';
+  editType='rec'; editIdx=id;
+  document.getElementById('edit-modal').classList.add('show');
+}
+async function saveEdit(){
+  try{
+    if(editType==='rec'){
+      const upd={cliente:document.getElementById('edit-cliente').value,fatura:document.getElementById('edit-fatura').value,valor:parseFloat(document.getElementById('edit-valor').value)||0,data:document.getElementById('edit-data').value,obs:document.getElementById('edit-obs').value};
+      await dbUpdate('recebidos',editIdx,upd);
+      const i=cache.recebidos.findIndex(x=>x.id===editIdx);
+      if(i>=0)cache.recebidos[i]={...cache.recebidos[i],...upd};
+      renderRecebidos(); renderDashboard();
+    } else if(editType==='dev'){
+      const upd={cliente:document.getElementById('edit-cliente').value,fatura:document.getElementById('edit-fatura').value,valor:parseFloat(document.getElementById('edit-valor').value)||0,venc:document.getElementById('edit-data').value,obs:document.getElementById('edit-obs').value};
+      await dbUpdate('devedores',editIdx,upd);
+      const i=cache.devedores.findIndex(x=>x.id===editIdx);
+      if(i>=0)cache.devedores[i]={...cache.devedores[i],...upd};
+      renderDevedores(); renderDashboard();
+    }
+    closeModal(); showToast('✅ Atualizado!');
+  }catch(e){showToast('❌ Erro: '+e.message,'var(--red)');}
+}
+function renderRecebidos(){
+  buildCityBanner('city-banner-rec');
+  const search=(document.getElementById('rec-search').value||'').toLowerCase();
+  const mesFiltro=document.getElementById('rec-mes-filtro').value;
+  const recebidos=getRecebidos();
+  let filtered=recebidos.filter(r=>{
+    const ok=r.cliente.toLowerCase().includes(search)||(r.fatura||'').includes(search);
+    const mes=mesFiltro?r.data.slice(0,7)===mesFiltro:true;
+    return ok&&mes;
+  }).sort((a,b)=>b.data.localeCompare(a.data));
+  document.getElementById('rec-sum-valor').textContent=fmtBRL(filtered.reduce((s,r)=>s+r.valor,0));
+  document.getElementById('rec-sum-count').textContent=filtered.length;
+  const tbody=document.getElementById('rec-table-body');
+  document.getElementById('rec-empty').style.display=filtered.length?'none':'block';
+  tbody.innerHTML=filtered.map((r)=>{
+    return`<tr>
+      <td>${fmtDate(r.data)}</td><td>${r.cliente}</td><td>${r.fatura||'—'}</td>
+      <td><strong style="color:var(--green)">${fmtBRL(r.valor)}</strong></td>
+      <td>${r.forma||'—'}</td><td style="color:var(--muted)">${r.obs||'—'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="editRecebido(${r.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecebido(${r.id})">🗑</button>
+      </td></tr>`;
+  }).join('');
+  const meses=[...new Set(recebidos.map(r=>r.data.slice(0,7)))].sort().reverse();
+  const sel=document.getElementById('rec-mes-filtro');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}"${m===cur?' selected':''}>${m}</option>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// DEVEDORES
+// ═══════════════════════════════════════════════════════
+async function addDevedor(){
+  const c=document.getElementById('dev-cliente').value.trim();
+  const f=document.getElementById('dev-fatura').value.trim();
+  const v=parseFloat(document.getElementById('dev-valor').value)||0;
+  const venc=document.getElementById('dev-venc').value;
+  const forma=document.getElementById('dev-forma').value;
+  const obs=document.getElementById('dev-obs').value.trim();
+  if(!c||!venc){showToast('Preencha cliente e vencimento!','var(--red)');return;}
+  try{
+    const row=await dbInsert('devedores',{city_id:activeCity,cliente:c,fatura:f,valor:v,venc,forma,obs,origem:'manual'});
+    cache.devedores.unshift(row[0]);
+    ['dev-cliente','dev-fatura','dev-valor','dev-obs'].forEach(id=>document.getElementById(id).value='');
+    renderDevedores(); renderDashboard();
+    showToast('⚠️ Devedor registrado!','var(--yellow)');
+  }catch(e){showToast('❌ Erro: '+e.message,'var(--red)');}
+}
+async function deleteDevedor(id){
+  if(!confirm('Remover?'))return;
+  try{
+    await dbDelete('devedores',id);
+    cache.devedores=cache.devedores.filter(d=>d.id!==id);
+    renderDevedores(); renderDashboard(); showToast('Removido.','var(--muted)');
+  }catch(e){showToast('❌ Erro: '+e.message,'var(--red)');}
+}
+function editDevedor(id){
+  const d=cache.devedores.find(x=>x.id===id);
+  if(!d)return;
+  document.getElementById('edit-cliente').value=d.cliente;
+  document.getElementById('edit-fatura').value=d.fatura||'';
+  document.getElementById('edit-valor').value=d.valor||0;
+  document.getElementById('edit-data').value=d.venc||'';
+  document.getElementById('edit-obs').value=d.obs||'';
+  editType='dev'; editIdx=id;
+  document.getElementById('edit-modal').classList.add('show');
+}
+async function marcarRecebido(id){
+  const d=cache.devedores.find(x=>x.id===id);
+  if(!d)return;
+  try{
+    const iso=today().toISOString().split('T')[0];
+    const row=await dbInsert('recebidos',{city_id:activeCity,cliente:d.cliente,fatura:d.fatura,valor:d.valor,data:iso,forma:d.forma,obs:'[pago — era devedor]'});
+    await dbDelete('devedores',id);
+    cache.recebidos.unshift(row[0]);
+    cache.devedores=cache.devedores.filter(x=>x.id!==id);
+    renderDevedores(); renderRecebidos(); renderDashboard();
+    showToast('✅ Marcado como recebido!');
+  }catch(e){showToast('❌ Erro: '+e.message,'var(--red)');}
+}
+function renderDevedores(){
+  buildCityBanner('city-banner-inad');
+  const search=(document.getElementById('dev-search').value||'').toLowerCase();
+  const filtro=document.getElementById('dev-filtro').value;
+  const devedores=getDevedores();
+  const enriched=devedores.map((d)=>{
+    const vd=parseDateISO(d.venc); const dias=vd?diffDays(vd):0;
+    return{...d,dias};
+  });
+  document.getElementById('inad-critico').textContent=enriched.filter(d=>d.dias>90).length;
+  document.getElementById('inad-atencao').textContent=enriched.filter(d=>d.dias>=31&&d.dias<=90).length;
+  document.getElementById('inad-recente').textContent=enriched.filter(d=>d.dias>=1&&d.dias<=30).length;
+  let filtered=enriched.filter(d=>{
+    const ok=d.cliente.toLowerCase().includes(search)||(d.fatura||'').includes(search);
+    if(!ok)return false;
+    if(filtro==='critico')return d.dias>90;
+    if(filtro==='atencao')return d.dias>=31&&d.dias<=90;
+    if(filtro==='recente')return d.dias>=1&&d.dias<=30;
+    return true;
+  }).sort((a,b)=>b.dias-a.dias);
+  const tbody=document.getElementById('dev-table-body');
+  document.getElementById('dev-empty').style.display=filtered.length?'none':'block';
+  tbody.innerHTML=filtered.map(d=>{
+    const dc=d.dias>90?'days-critical':d.dias>=31?'days-warning':'days-ok';
+    const badge=d.dias>90?'<span class="badge badge-red">CRÍTICO</span>':d.dias>=31?'<span class="badge badge-yellow">ATENÇÃO</span>':'<span class="badge badge-blue">RECENTE</span>';
+    const orig=d.origem==='planilha'?'<span class="badge badge-blue">Planilha</span>':'<span class="badge" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border)">Manual</span>';
+    return`<tr>
+      <td>${d.cliente}</td><td>${d.fatura||'—'}</td><td>${fmtDate(d.venc)}</td>
+      <td class="${dc}">${d.dias>0?d.dias+' dias':'Em dia'}</td>
+      <td>${d.valor?fmtBRL(d.valor):'—'}</td><td>${d.forma||'—'}</td>
+      <td>${orig}</td><td>${badge}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-success btn-sm" onclick="marcarRecebido(${d.id})" title="Pago">✔</button>
+        <button class="btn btn-ghost btn-sm" onclick="editDevedor(${d.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteDevedor(${d.id})">🗑</button>
+      </td></tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CLIENTES
+// ═══════════════════════════════════════════════════════
+function renderClientes(){
+  buildCityBanner('city-banner-cli');
+  const search=(document.getElementById('cli-search').value||'').toLowerCase();
+  const sfiltro=document.getElementById('cli-status-filtro').value;
+  const clientes=getClientes();
+  let filtered=clientes.filter(c=>{
+    const ok=c.cliente.toLowerCase().includes(search)||(c.fatura||'').includes(search)||(c.cpfcnpj||'').includes(search);
+    if(!ok)return false;
+    if(sfiltro){const vd=parseDateISO(c.vencimento);const dias=vd?diffDays(vd):0;if(sfiltro==='vencida'&&dias<=0)return false;if(sfiltro==='avencer'&&dias>0)return false;}
+    return true;
+  });
+  document.getElementById('clientes-count-sub').textContent=filtered.length+' de '+clientes.length+' registros';
+  document.getElementById('clientes-header-sub').textContent=clientes.length+' clientes — '+city().name;
+  const tbody=document.getElementById('cli-table-body');
+  const empty=document.getElementById('cli-empty');
+  if(clientes.length===0){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=filtered.map(c=>{
+    const vd=parseDateISO(c.vencimento);
+    let st='<span class="badge" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border)">—</span>';
+    if(vd){const d=diffDays(vd);if(d>90)st=`<span class="badge badge-red">Venc. há ${d}d</span>`;else if(d>0)st=`<span class="badge badge-yellow">Venc. há ${d}d</span>`;else if(d===0)st=`<span class="badge badge-yellow">Vence hoje</span>`;else st=`<span class="badge badge-blue">Vence em ${-d}d</span>`;}
+    return`<tr><td>${c.cliente}</td><td style="color:var(--muted)">${c.cpfcnpj||'—'}</td><td>${c.fatura||'—'}</td><td>${c.emissao?fmtDate(c.emissao):'—'}</td><td>${c.vencimento?fmtDate(c.vencimento):'—'}</td><td>${c.saldo?fmtBRL(c.saldo):'—'}</td><td>${c.par||'—'}</td><td>${c.forma||'—'}</td><td>${st}</td></tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderDashboard(){
+  buildCityBanner('city-banner-dash');
+  const clientes=getClientes();
+  const recebidos=getRecebidos();
+  const devedores=getDevedores();
+  let vencidas=0,aVencer=0;
+  const cc={};
+  clientes.forEach(c=>{
+    const vd=parseDateISO(c.vencimento); if(!vd)return;
+    const d=diffDays(vd);
+    if(d>0){vencidas++;cc[c.cliente]=cc[c.cliente]||{count:0,max:0};cc[c.cliente].count++;if(d>cc[c.cliente].max)cc[c.cliente].max=d;}
+    else if(d>=-30)aVencer++;
+  });
+  document.getElementById('dc-total').textContent=clientes.length;
+  document.getElementById('dc-total-sub').textContent='registros em '+city().name;
+  document.getElementById('dc-vencidas').textContent=vencidas;
+  document.getElementById('dc-vencidas-sub').textContent='faturas em atraso';
+  document.getElementById('dc-avencer').textContent=aVencer;
+  const totalRec=recebidos.reduce((s,r)=>s+r.valor,0);
+  const totalDev=devedores.reduce((s,d)=>s+(d.valor||0),0);
+  document.getElementById('dc-recebido').textContent=fmtBRL(totalRec);
+  document.getElementById('dc-recebido-sub').textContent=recebidos.length+' lançamentos';
+  document.getElementById('dc-saldo-dev').textContent=fmtBRL(totalDev);
+  document.getElementById('dc-saldo-dev-sub').textContent=devedores.length+' inadimplentes';
+  // Top
+  const sorted=Object.entries(cc).sort((a,b)=>b[1].max-a[1].max).slice(0,8);
+  document.getElementById('top-clients-table').innerHTML=sorted.length?sorted.map(([n,i])=>`<tr><td style="font-size:12px">${n.substring(0,35)}${n.length>35?'…':''}</td><td><span class="badge badge-red">${i.count}</span></td><td class="days-critical">${i.max}d</td></tr>`).join(''):'<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:14px">Sem dados para esta cidade</td></tr>';
+  // Proximos
+  const prox=clientes.filter(c=>{const vd=parseDateISO(c.vencimento);if(!vd)return false;const d=diffDays(vd);return d>=-30&&d<=0;}).sort((a,b)=>parseDateISO(a.vencimento)-parseDateISO(b.vencimento)).slice(0,10);
+  document.getElementById('venc-proximos-table').innerHTML=prox.length?prox.map(c=>{const vd=parseDateISO(c.vencimento);const d=diffDays(vd);const b=d===0?'<span class="badge badge-yellow">Hoje</span>':d<0?`<span class="badge badge-blue">Em ${-d}d</span>`:'<span class="badge badge-red">Vencida</span>';return`<tr><td style="font-size:12px">${c.cliente.substring(0,30)}${c.cliente.length>30?'…':''}</td><td>${fmtDate(c.vencimento)}</td><td>${b}</td></tr>`;}).join(''):'<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:14px">Sem vencimentos próximos</td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAÇÃO
+// ═══════════════════════════════════════════════════════
+let rawSheetData=[], rawHeaders=[];
+
+function updateUploadHint(){
+  const c=city();
+  document.getElementById('upload-city-hint').textContent=`💡 Os dados serão salvos exclusivamente para ${c.name} — ${c.state}`;
+  document.getElementById('hist-city-label').textContent=c.name;
+}
+function handleDragOver(e){e.preventDefault();document.getElementById('upload-zone').classList.add('drag-over');}
+function handleDragLeave(){document.getElementById('upload-zone').classList.remove('drag-over');}
+function handleDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processFile(f);}
+function handleFileSelect(e){const f=e.target.files[0];if(f)processFile(f);}
+
+function processFile(file){
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['xls','xlsx','csv'].includes(ext)){showResult('error','❌ Use .xls, .xlsx ou .csv');return;}
+  showProgress(true);
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      animateProgress(0,60,300,()=>{
+        const wb=ext==='csv'?XLSX.read(e.target.result,{type:'string'}):XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const json=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+        rawSheetData=json;
+        let hr=0;
+        for(let i=0;i<Math.min(10,json.length);i++){if(json[i].filter(c=>c&&c.toString().trim()).length>=3){hr=i;break;}}
+        rawHeaders=json[hr].map(h=>(h||'').toString().trim());
+        animateProgress(60,100,300,()=>{
+          showProgress(false);
+          showPreview(json,hr);
+          showColMapping(file.name);
+        });
+      });
+    }catch(err){showProgress(false);showResult('error','❌ Erro: '+err.message);}
+  };
+  if(ext==='csv')reader.readAsText(file,'UTF-8');else reader.readAsArrayBuffer(file);
+}
+function animateProgress(from,to,ms,cb){
+  const steps=20,step=(to-from)/steps,interval=ms/steps;let cur=from;
+  const bar=document.getElementById('progress-bar');
+  const t=setInterval(()=>{cur+=step;bar.style.width=Math.min(cur,to)+'%';if(cur>=to){clearInterval(t);if(cb)cb();}},interval);
+}
+function showProgress(v){document.getElementById('import-progress').style.display=v?'block':'none';if(v)document.getElementById('progress-bar').style.width='0%';}
+function showResult(type,msg){const el=document.getElementById('import-result');el.style.display='block';el.className='import-result '+type;el.innerHTML=msg;}
+
+const FIELD_DEFS=[
+  {key:'cliente', label:'Cliente / Nome',    aliases:['cliente','nome','razão social','razao social','name','tomador']},
+  {key:'cpfcnpj', label:'CPF / CNPJ',        aliases:['cpf/cnpj','cpf','cnpj','documento','doc']},
+  {key:'fatura',  label:'Nr. Fatura / OS',   aliases:['nr. fatura','fatura','nf','número o.s','numero o.s','nr fatura','os','invoice']},
+  {key:'emissao', label:'Data Emissão',       aliases:['emissão','emissao','data emissão','data emissao','dt emissão']},
+  {key:'par',     label:'Parcela',            aliases:['par.','par','parcela','parc']},
+  {key:'vencimento',label:'Vencimento',       aliases:['vencimento','venc','data venc','data vencimento','dt venc','due date','venc.']},
+  {key:'saldo',   label:'Valor / Saldo',      aliases:['saldo','valor','valor dpl','valor total','amount','value']},
+  {key:'forma',   label:'Forma Cobrança',     aliases:['forma cobrança','forma cobranca','forma','cobrança','cobranca','payment']},
+];
+function autoMap(headers){const m={};FIELD_DEFS.forEach(f=>{const h=headers.find(h=>f.aliases.some(a=>h.toLowerCase().trim()===a));if(h)m[f.key]=h;});return m;}
+
+function showColMapping(filename){
+  const m=autoMap(rawHeaders);
+  const panel=document.getElementById('col-mapping-panel');
+  panel.style.display='block'; panel.dataset.filename=filename;
+  const opts=['<option value="">(não mapear)</option>',...rawHeaders.map(h=>`<option value="${h}">${h}</option>`)].join('');
+  document.getElementById('col-mapping-form').innerHTML=FIELD_DEFS.map(f=>`
+    <div class="form-group"><label class="form-label">${f.label}</label>
+    <select class="form-control" id="map-${f.key}">${opts}</select></div>`).join('');
+  FIELD_DEFS.forEach(f=>{const s=document.getElementById('map-'+f.key);if(s&&m[f.key])s.value=m[f.key];});
+}
+
+async function confirmImport(){
+  const mapping={};
+  FIELD_DEFS.forEach(f=>{const v=document.getElementById('map-'+f.key)?.value||'';if(v)mapping[f.key]=v;});
+  if(!mapping.cliente&&!mapping.fatura){showToast('Mapeie pelo menos Cliente ou Fatura!','var(--red)');return;}
+  let hr=0;
+  for(let i=0;i<Math.min(10,rawSheetData.length);i++){if(rawSheetData[i].filter(c=>c&&c.toString().trim()).length>=3){hr=i;break;}}
+  const headers=rawSheetData[hr].map(h=>(h||'').toString().trim());
+  const colIdx={};
+  Object.entries(mapping).forEach(([field,header])=>{colIdx[field]=headers.indexOf(header);});
+  const imported=[];
+  for(let i=hr+1;i<rawSheetData.length;i++){
+    const row=rawSheetData[i];
+    const get=f=>colIdx[f]!=null&&colIdx[f]>=0?((row[colIdx[f]]||'').toString().trim()):'';
+    const cliente=get('cliente'),fatura=get('fatura');
+    if(!cliente&&!fatura)continue;
+    const rawSaldo=get('saldo');
+    const saldo=parseFloat(rawSaldo.replace(/[^\d,.-]/g,'').replace(',','.'))||0;
+    imported.push({city_id:activeCity,cliente,cpfcnpj:get('cpfcnpj'),fatura,emissao:isoFromBR(get('emissao'))||get('emissao'),par:get('par'),vencimento:isoFromBR(get('vencimento'))||null,saldo,forma:get('forma')});
+  }
+  if(!imported.length){showResult('error','❌ Nenhuma linha válida. Verifique o mapeamento.');return;}
+  showLoading(true);
+  try{
+    await dbDeleteAll('clientes',activeCity);
+    for(let i=0;i<imported.length;i+=100){
+      await sbFetch('clientes','POST',imported.slice(i,i+100));
+    }
+    cache.clientes=await dbGet('clientes',activeCity);
+    const now=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const filename=document.getElementById('col-mapping-panel').dataset.filename||'planilha';
+    const hist=getImpHist();
+    hist.unshift({filename,date:now,count:imported.length,city:city().name,id:Date.now()});
+    save(cityKey('imp_hist'),hist.slice(0,10));
+    showLoading(false);
+    document.getElementById('col-mapping-panel').style.display='none';
+    document.getElementById('preview-panel').style.display='none';
+    showResult('success',`✅ <strong>${imported.length} registros importados</strong> para <strong>${city().name}</strong> a partir de <em>${filename}</em>!<br>
+      <span style="color:var(--muted);font-size:12px">Dados salvos no Supabase — ficam disponíveis em qualquer dispositivo.</span>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="showPage('clientes')">👥 Ver Clientes</button>
+        <button class="btn btn-ghost btn-sm" onclick="showPage('dashboard')">🏠 Dashboard</button>
+      </div>`);
+    buildClientesList(); buildCityBtns(); renderImportHistory();
+    showToast(`✅ ${imported.length} registros salvos em ${city().name}!`);
+    document.getElementById('file-input').value='';
+  }catch(e){showLoading(false);showResult('error','❌ Erro ao importar: '+e.message);}
+}
+function cancelImport(){
+  document.getElementById('col-mapping-panel').style.display='none';
+  document.getElementById('preview-panel').style.display='none';
+  document.getElementById('import-result').style.display='none';
+  rawSheetData=[];rawHeaders=[];
+}
+function showPreview(json,hr){
+  const panel=document.getElementById('preview-panel');
+  panel.style.display='block';
+  const headers=json[hr]||[];
+  document.getElementById('preview-sub').textContent=`${json.length-hr-1} linhas encontradas — mostrando as primeiras 8`;
+  document.getElementById('preview-thead').innerHTML='<tr>'+headers.map(h=>`<th>${h||'—'}</th>`).join('')+'</tr>';
+  document.getElementById('preview-tbody').innerHTML=json.slice(hr+1,hr+9).map(r=>'<tr>'+headers.map((_,i)=>`<td style="font-size:12px;white-space:nowrap">${(r[i]||'').toString().substring(0,40)}</td>`).join('')+'</tr>').join('');
+}
+function renderImportHistory(){
+  updateUploadHint();
+  const hist=getImpHist();
+  const btn=document.getElementById('clear-hist-btn');
+  const el=document.getElementById('import-history-list');
+  if(!hist.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Nenhuma importação para esta cidade ainda.</div>';btn.style.display='none';return;}
+  btn.style.display='inline-flex';
+  el.innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Arquivo</th><th>Data</th><th>Registros</th><th>Cidade</th></tr></thead>
+    <tbody>${hist.map(h=>`<tr><td>📊 ${h.filename}</td><td style="color:var(--muted)">${h.date}</td><td><span class="badge badge-green">${h.count}</span></td><td>${h.city||city().name}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function clearImportHistory(){if(!confirm('Limpar histórico desta cidade?'))return;save(cityKey('imp_hist'),[]);renderImportHistory();showToast('Histórico limpo.','var(--muted)');}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+async function init(){
+  const t=today().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  document.getElementById('today-date').textContent=t;
+  const iso=today().toISOString().split('T')[0];
+  document.getElementById('rec-data').value=iso;
+  document.getElementById('dev-venc').value=iso;
+  applyThemeColor(city().color);
+  buildCityBtns();
+  await loadCityData();
+  buildClientesList();
+  renderDashboard();
+}
+init();
+</script>
+</body>
+</html>
